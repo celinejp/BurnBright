@@ -10,48 +10,55 @@ import { Card, CardContent } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/datepicker';
 import { Select, SelectItem } from '@/components/ui/select';
 
-const ACCESS_TOKEN = "3438~eEe6MaZJABFZunCJxYNa7vkmwfWr2DhKTctAnWMuXCZPWku6tNU3kBeCMxxN8eWw";
-const CANVAS_DOMAIN = "canvas.ucdavis.edu";
-
 export default function DashboardPage() {
   const { user, error, isLoading } = useUser();
 
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Week');
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date>(new Date());
   const [aiSummary, setAiSummary] = useState('');
   const [burnoutPercent, setBurnoutPercent] = useState<number>(0);
   const [stressLevel, setStressLevel] = useState('Moderate');
   const [weeklyStressMap, setWeeklyStressMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const fetchBurnoutPrediction = async () => {
-    if (!date) return;
-    setLoading(true);
-
-    try {
-      const res = await axios.post('/api/burnout-summary-direct', {
-        token: ACCESS_TOKEN,
-        date: format(date, 'yyyy-MM-dd'),
-        view,
-      });
-
-      const { summary, burnout, stressLevel, weeklyStressMap } = res.data;
-      setAiSummary(summary);
-      setBurnoutPercent(burnout);
-      setStressLevel(stressLevel);
-      setWeeklyStressMap(weeklyStressMap);
-    } catch (err) {
-      console.error('Error loading burnout analysis:', err);
-    }
-
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const fetchBurnoutPrediction = async () => {
+      if (!date) return;
+      setLoading(true);
+
+      try {
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        const payload =
+          view === 'Day'
+            ? {
+                email: 'slokhande@ucdavis.edu',
+                view,
+                start: `${formattedDate}T00:00:00Z`,
+                end: `${formattedDate}T23:59:59Z`,
+              }
+            : {
+                email: 'slokhande@ucdavis.edu',
+                view,
+                date: formattedDate,
+              };
+
+        const res = await axios.post('/api/proxy-burnout', payload);
+        const { burnout, summary, stressLevel, weeklyStressMap } = res.data;
+        setAiSummary(summary);
+        setBurnoutPercent(burnout);
+        setStressLevel(stressLevel);
+        setWeeklyStressMap(weeklyStressMap);
+      } catch (err) {
+        console.error('❌ Error fetching burnout data:', err);
+      }
+
+      setLoading(false);
+    };
+
     fetchBurnoutPrediction();
   }, [date, view]);
 
-  if (isLoading) return <div className="p-10 text-lg">Loading...</div>;
+  if (isLoading) return <div className="p-10 text-lg">Loading burnout insights...</div>;
   if (error) return <div className="p-10 text-red-600">Error: {error.message}</div>;
   if (!user) {
     return (
@@ -89,14 +96,7 @@ export default function DashboardPage() {
 
       {/* Controls */}
       <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-6">
-        <DatePicker
-  date={date}
-  onDateChange={(newDate) => {
-    setDate(newDate);
-    setTimeout(fetchBurnoutPrediction, 100); // Slight delay to ensure state updates
-  }}
-/>
-
+        <DatePicker date={date} onDateChange={(newDate) => setDate(newDate)} />
         <Select value={view} onValueChange={(val) => setView(val as typeof view)}>
           <SelectItem value="Day">Day</SelectItem>
           <SelectItem value="Week">Week</SelectItem>
@@ -116,11 +116,11 @@ export default function DashboardPage() {
               : 'text-green-600'
           }`}
         >
-          {stressLevel || 'Loading...'}
+          {stressLevel}
         </span>
       </p>
 
-      {/* Weekly Stress */}
+      {/* Weekly Stress Summary */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-2">📅 Weekly Stress Summary</h2>
         <div className="flex gap-3 text-white text-center text-sm font-medium">
@@ -137,8 +137,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Summary */}
-      {aiSummary && (
+      {/* AI Summary */}
+      {aiSummary ? (
         <section className="mt-10">
           <h2 className="text-xl font-bold mb-4">🧠 AI Wellness Insights</h2>
           <Card>
@@ -147,6 +147,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </section>
+      ) : (
+        <p className="text-gray-500 italic">No AI summary available for this selection.</p>
       )}
     </main>
   );
