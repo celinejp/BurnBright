@@ -58,7 +58,7 @@ export default function DashboardPage() {
     fetchBurnoutPrediction();
   }, [date, view]);
 
-  if (isLoading) return <div className="p-10 text-lg">Loading burnout insights...</div>;
+  if (isLoading) return <div className="p-10 text-lg text-center">Loading burnout insights...</div>;
   if (error) return <div className="p-10 text-red-600">Error: {error.message}</div>;
   if (!user) {
     return (
@@ -73,20 +73,24 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="bg-orange-50 min-h-screen px-6 py-16 text-gray-900">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Welcome, {user.name} 👋</h1>
+    <main className="bg-orange-50 min-h-screen px-6 py-12 md:py-16 text-gray-900">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
+        <div>
+          <h1 className="text-3xl font-bold">Welcome, {user.name} 👋</h1>
+          <p className="text-sm text-gray-600 mt-1">Your personalized burnout dashboard</p>
+        </div>
         <a href="/api/auth/logout">
-          <Button variant="outline">Logout</Button>
+          <Button variant="outline" className="mt-4 md:mt-0">Logout</Button>
         </a>
       </div>
 
       {/* Burnout Meter */}
-      <div className="mb-8">
+      <div className="mb-10">
         <h2 className="text-xl font-semibold mb-2">🔥 Live Burnout Score</h2>
-        <div className="w-full bg-gray-200 h-6 rounded-full overflow-hidden">
+        <div className="w-full bg-gray-200 h-6 rounded-full overflow-hidden shadow-inner">
           <div
-            className="bg-red-500 h-6 text-right pr-2 text-white text-sm leading-6"
+            className="bg-gradient-to-r from-orange-400 to-red-600 h-6 text-right pr-2 text-white text-sm leading-6 transition-all duration-500 ease-out"
             style={{ width: `${burnoutPercent}%` }}
           >
             {burnoutPercent}%
@@ -95,18 +99,18 @@ export default function DashboardPage() {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:gap-6 mb-8">
         <DatePicker date={date} onDateChange={(newDate) => setDate(newDate)} />
-        <Select value={view} onValueChange={(val) => setView(val as typeof view)}>
+        {/* <Select value={view} onValueChange={(val) => setView(val as typeof view)}>
           <SelectItem value="Day">Day</SelectItem>
           <SelectItem value="Week">Week</SelectItem>
           <SelectItem value="Month">Month</SelectItem>
-        </Select>
+        </Select> */}
       </div>
 
       {/* Stress Level */}
       <p className="text-lg mb-6">
-        Current Stress Level:
+        <span className="font-medium">Current Stress Level:</span>
         <span
           className={`ml-2 font-semibold ${
             stressLevel === 'High'
@@ -127,7 +131,7 @@ export default function DashboardPage() {
           {['M', 'T', 'W', 'T2', 'F', 'S'].map((day) => (
             <div
               key={day}
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition ${
                 weeklyStressMap[day] || 'bg-gray-300'
               }`}
             >
@@ -141,8 +145,8 @@ export default function DashboardPage() {
       {aiSummary ? (
         <section className="mt-10">
           <h2 className="text-xl font-bold mb-4">🧠 AI Wellness Insights</h2>
-          <Card>
-            <CardContent className="prose mt-4 whitespace-pre-wrap leading-relaxed">
+          <Card className="shadow-md border border-orange-100">
+            <CardContent className="prose mt-4 whitespace-pre-wrap leading-relaxed max-w-none text-sm">
               {aiSummary}
             </CardContent>
           </Card>
